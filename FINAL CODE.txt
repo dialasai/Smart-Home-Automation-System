@@ -1,0 +1,127 @@
+ unsigned int dcntr;
+ unsigned int reading;
+  void Delay_ms(unsigned int k){   //ms_delay
+dcntr=0;
+while  (dcntr<k);
+}
+void Delay_us(unsigned int usCnt){         //us delay
+    unsigned int us=0;
+    for(us=0;us<usCnt;us++){
+    asm NOP;//0.5 uS
+    asm NOP;//0.5uS
+  }
+}
+
+void Rotation0() {//0 Degree
+    unsigned int i;
+    for(i=0;i<50;i++){
+       PORTB= PORTB| 0x01;
+       Delay_us(800);
+       PORTB =PORTB & 0xFE;
+       Delay_us(19200);
+       }
+}
+
+void Rotation180(){ //180 Degree
+       unsigned int i;
+       for(i=0;i<50;i++){
+        PORTB= PORTB| 0x01;
+         Delay_us(2200);
+         PORTB =PORTB & 0xFE;
+         Delay_us(17800);
+         }
+}
+  void ATD_init(void){
+    ADCON0 = 0x49;// ATD ON, Don't GO, CHannel 1, Fosc/16
+    ADCON1 = 0xC2;// All channels Analog, 500 KHz, right justified
+    TRISA = 0xFF;
+
+
+}
+
+unsigned int ATD_read(void){
+  ADCON0 = ADCON0 | 0x04;// GO
+  while(ADCON0 & 0x04);
+  return((ADRESH<<8) | ADRESL); }
+
+  void Rotation_2_0() {//0 Degree
+    unsigned int i;
+    for(i=0;i<50;i++){
+       PORTE= 0x02;
+       Delay_us(800);
+       PORTE = 0x00;
+       Delay_us(19200);
+       }
+}
+
+void Rotation_2_90() //90 Degree
+{
+unsigned int i;
+for(i=0;i<50;i++)
+{
+PORTE= PORTE | 0x02;
+Delay_us(1500); // pulse of 1500us
+PORTE =0x00;
+Delay_us(18500);
+}
+}
+
+void Rotation_2_180(){ //180 Degree
+       unsigned int i;
+       for(i=0;i<50;i++){
+         PORTE= PORTE | 0x02;
+         Delay_us(2200);
+         PORTE=  0x00;
+         Delay_us(17800);
+         }
+}
+
+
+void main() {
+            unsigned char i;
+           TRISB  = 0x02; //ALL PORTB OUTPUTS EXPET RB1
+           TRISC  = 0x01; //ALL PORTB OUTPUTS EXPET RC0
+           TRISD=   0x00; // PORTC OUTPUTS
+           TRISE=  0x01;
+           PORTC = PORTC | 0xFE; //(LEDs ON)
+           PORTD = PORTD & 0x00;
+           PORTB = PORTB & 0x00;
+           PORTE= 0x00; //ALL PORTB OUTPUTS
+                 ATD_init(); //180 Degree
+
+        while(1) {
+        
+        //Temperature sensor test
+            reading = ((ATD_read()*500)/1023)-2;
+         if(reading>30){ //check if the reading is higher than 30
+         PORTD= 0x02;
+         Delay_ms(1000);
+         }
+         else  PORTD= 0x00;
+         // Touch test
+          if(PORTE & 0x01){ // check if there is a touch
+             Rotation_2_0();
+             Delay_ms(10);
+          }
+          else if (!(PORTE & 0x01)) {
+           Rotation_2_90();
+             Delay_ms(10);
+          }
+
+        // LDR test
+       if(!(PORTC & 0x01)) {
+            // If LDR detects light, turn off the LEDs
+            PORTC = PORTC & 0x00; // Clear bits
+             Rotation0();
+             Delay_ms(10);
+           }
+         else {
+            // If LDR does not detect light, turn on the LEDs
+            PORTC = PORTC | 0xFF; // Set bits
+            Rotation180();
+            Delay_ms(10);
+
+}
+
+
+}        }
